@@ -1,0 +1,13 @@
+# ------------------- #
+POSTGRES_USER=
+POSTGRES_PASSWORD=
+POSTGRES_DB=
+POSTGRES_PORT
+# Set host to localhost if you want to connect to a local database
+POSTGRES_HOST=localhost
+
+# ------------------- #
+SECRET_KEY=
+ALGORITHM=
+ACCESS_TOKEN_EXPIRE_MINUTES=
+LINE_LENGTH=
