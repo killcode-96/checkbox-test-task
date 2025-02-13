@@ -29,6 +29,8 @@ class Receipt(Base):
         Enum("cash", "cashless", name="payment_type_enum"), nullable=False
     )
     payment_amount = Column(Numeric(10, 2), nullable=False)
+    total = Column(Numeric(10, 2), nullable=False)
+    rest = Column(Numeric(10, 2), nullable=False, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="receipts")
@@ -57,7 +59,7 @@ class ShortLink(Base):
     )
     short_code = Column(String, unique=True, nullable=False, index=True)
 
-    receipt = relationship("Receipt", back_populates="short_link")  # Змінено
+    receipt = relationship("Receipt", back_populates="short_link")
 
     @staticmethod
     def generate_short_code(length: int = 8) -> str:
