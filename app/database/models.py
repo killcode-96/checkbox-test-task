@@ -2,7 +2,16 @@ import uuid
 import secrets
 import string
 
-from sqlalchemy import Column, Integer, String, Numeric, DateTime, ForeignKey, Enum
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Numeric,
+    DateTime,
+    ForeignKey,
+    Enum,
+    select,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID
@@ -35,7 +44,9 @@ class Receipt(Base):
 
     user = relationship("User", back_populates="receipts")
     products = relationship("Product", back_populates="receipt")
-    short_link = relationship("ShortLink", back_populates="receipt", uselist=False)
+    short_link = relationship(
+        "ShortLink", back_populates="receipt", uselist=False, lazy="joined"
+    )
 
 
 class Product(Base):
@@ -68,16 +79,19 @@ class ShortLink(Base):
         return "".join(secrets.choice(alphabet) for _ in range(length))
 
     @classmethod
-    def create_short_link(cls, db: "Session", receipt_id: UUID) -> "ShortLink":  # type: ignore
+    async def create_short_link(cls, db: "AsyncSession", receipt_id: UUID) -> "ShortLink":  # type: ignore
         """Creates a short link for a receipt."""
         while True:
             short_code = cls.generate_short_code()
-            existing_link = db.query(cls).filter(cls.short_code == short_code).first()
+            existing_link_result = await db.execute(
+                select(cls).filter(cls.short_code == short_code)
+            )
+            existing_link = existing_link_result.scalar_one_or_none()
             if not existing_link:
                 break
 
         short_link = cls(receipt_id=receipt_id, short_code=short_code)
         db.add(short_link)
-        db.commit()
-        db.refresh(short_link)
+        await db.commit()
+        await db.refresh(short_link)
         return short_link
