@@ -28,26 +28,25 @@ class ReceiptService:
 
         db_receipt = models.Receipt(
             user_id=user_id,
-            products=products,
             payment_type=receipt.payment.type,
             payment_amount=receipt.payment.amount,
             total=total,
-            rest=(
-                (payment_amount - total)
-                if (payment_amount := receipt.payment.amount)
-                else 0
-            ),
+            rest=(receipt.payment.amount - total if receipt.payment.amount else 0),
         )
 
         self.db.add(db_receipt)
+
+        for product in products:
+            db_receipt.products.append(product)
+
         await self.db.commit()
-        await self.db.refresh(db_receipt)
 
         short_link = await ShortLink.create_short_link(
             db=self.db, receipt_id=db_receipt.id
         )
         db_receipt.short_link = short_link
 
+        await self.db.commit()
         await self.db.refresh(db_receipt, attribute_names=["short_link", "products"])
 
         return db_receipt

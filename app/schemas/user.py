@@ -14,8 +14,7 @@ class UserCreate(UserBase):
 class User(UserBase):
     id: uuid.UUID
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class Token(BaseModel):
