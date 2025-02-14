@@ -1,13 +1,16 @@
 from fastapi import FastAPI
 
+from app.api import users, receipts, public
+
+
 app = FastAPI()
 
 
 @app.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "Checkbox Test Task"}
 
 
-@app.get("/hello/{name}")
-async def say_hello(name: str):
-    return {"message": f"Hello {name}"}
+app.include_router(users.router, prefix="/users", tags=["users"])
+app.include_router(receipts.router, prefix="/receipts", tags=["receipts"])
+app.include_router(public.router, prefix="/public", tags=["public"])
