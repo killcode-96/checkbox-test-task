@@ -20,11 +20,9 @@ class ProductBase(BaseModel):
 class Product(ProductBase):
     total: float
 
-    @field_validator("total", mode="before")
-    def calculate_total(self, v, values):
-        if "price" in values.data and "quantity" in values.data:
-            return round(values.data["price"] * values.data["quantity"], 2)
-        return v
+    @field_validator("total", mode="after")
+    def round_total(cls, value):
+        return round(value, 2)
 
 
 class Payment(BaseModel):
@@ -43,42 +41,9 @@ class Receipt(BaseModel):
     payment: Payment
     total: float
     rest: float
-    created_at: datetime
     user_id: uuid.UUID
     public_url: str | None = None
-
-    class Config:
-        from_attributes = True
-
-
-class ShortLinkBase(BaseModel):
-    short_code: str
-
-
-class ShortLink(ShortLinkBase):
-    id: int
-    receipt_id: uuid.UUID
-
-    class Config:
-        from_attributes = True
-
-
-class ReceiptPublic(BaseModel):
-    products: List[Product]
-    payment: Payment
-    total: float
-    rest: float
     created_at: datetime
-
-    class Config:
-        from_attributes = True
-
-
-class ReceiptList(BaseModel):
-    id: uuid.UUID
-    created_at: datetime
-    total: float
-    payment_type: PaymentType
 
     class Config:
         from_attributes = True
