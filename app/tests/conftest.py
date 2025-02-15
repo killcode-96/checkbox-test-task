@@ -1,7 +1,9 @@
+import os
 import uuid
 import asyncio
 
 import pytest_asyncio
+from dotenv import load_dotenv
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
@@ -19,7 +21,9 @@ async def event_loop():
     loop.close()
 
 
-TEST_DATABASE_URL = "postgresql+asyncpg://checkbox_test_task_user:checkbox_test_task_password@db:5432/checkbox_test_task_db"
+load_dotenv()
+
+TEST_DATABASE_URL = f"postgresql+asyncpg://{os.getenv("POSTGRES_USER")}:{os.getenv("POSTGRES_PASSWORD")}@{os.getenv("POSTGRES_HOST")}:{os.getenv("POSTGRES_PORT")}/{os.getenv("POSTGRES_DB")}"
 
 test_engine = create_async_engine(TEST_DATABASE_URL, echo=False, future=True)
 TestSessionLocal = async_sessionmaker(
