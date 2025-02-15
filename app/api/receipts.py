@@ -19,7 +19,7 @@ def get_receipt_service(db: AsyncSession = Depends(db.get_db)) -> ReceiptService
 
 
 def generate_public_url(short_code: str, prefix: str = "public") -> str:
-    return f"http://{settings.HOST}/{prefix}/{short_code}"
+    return f"{settings.HOST}/{prefix}/{short_code}/"
 
 
 @router.post(
@@ -129,7 +129,7 @@ async def list_receipts(
 
 
 @router.get(
-    "/{receipt_id}",
+    "/{receipt_id}/",
     response_model=receipt_schemas.Receipt,
     summary="Отримати чек",
     description="Повертає конкретний чек за його ID для аутентифікованого користувача.",
