@@ -9,7 +9,6 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
 from app.main import app
 from app.database.db import get_db
-from app.database import models
 from app.schemas.user import UserCreate
 from app.services.user import UserService
 
@@ -31,20 +30,20 @@ TestSessionLocal = async_sessionmaker(
 )
 
 
-@pytest_asyncio.fixture(loop_scope="session", autouse=True)
-async def create_test_db():
-    async with test_engine.begin() as conn:
-        await conn.run_sync(models.Base.metadata.create_all)
-    yield
-    async with test_engine.begin() as conn:
-        await conn.run_sync(models.Base.metadata.drop_all)
+@pytest_asyncio.fixture(loop_scope="session")
+async def db_session():
+    async with test_engine.connect() as connection:
+        trans = await connection.begin()
+        async_session = async_sessionmaker(bind=connection, expire_on_commit=False)
+        async with async_session() as session:
+            yield session
+        await trans.rollback()
 
 
 @pytest_asyncio.fixture(loop_scope="session")
-async def override_get_db():
+async def override_get_db(db_session):
     async def _override_get_db():
-        async with TestSessionLocal() as session:
-            yield session
+        yield db_session
 
     app.dependency_overrides[get_db] = _override_get_db
     yield
@@ -59,16 +58,15 @@ async def client(override_get_db):
 
 
 @pytest_asyncio.fixture(loop_scope="session")
-async def create_test_user():
+async def create_test_user(db_session):
     test_user_data = UserCreate(
         username=f"test_user{str(uuid.uuid4())}",
         full_name="Test User",
         password="test_password",
     )
-    async with TestSessionLocal() as session:
-        user_service = UserService(session)
-        user = await user_service.create_user(test_user_data)
-        yield user
+    user_service = UserService(db_session)
+    user = await user_service.create_user(test_user_data)
+    yield user
 
 
 @pytest_asyncio.fixture(loop_scope="session")
