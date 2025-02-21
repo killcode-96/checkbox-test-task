@@ -12,6 +12,7 @@ from sqlalchemy import (
     Enum,
     select,
 )
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID
@@ -79,19 +80,17 @@ class ShortLink(Base):
         return "".join(secrets.choice(alphabet) for _ in range(length))
 
     @classmethod
-    async def create_short_link(cls, db: "AsyncSession", receipt_id: UUID) -> "ShortLink":  # type: ignore
+    async def create_short_link(
+        cls, db: "AsyncSession", receipt_id: UUID
+    ) -> "ShortLink":
         """Creates a short link for a receipt."""
         while True:
             short_code = cls.generate_short_code()
-            existing_link_result = await db.execute(
-                select(cls).filter(cls.short_code == short_code)
-            )
-            existing_link = existing_link_result.scalar_one_or_none()
-            if not existing_link:
-                break
-
-        short_link = cls(receipt_id=receipt_id, short_code=short_code)
-        db.add(short_link)
-        await db.commit()
-        await db.refresh(short_link)
-        return short_link
+            short_link = cls(receipt_id=receipt_id, short_code=short_code)
+            db.add(short_link)
+            try:
+                await db.commit()
+                await db.refresh(short_link)
+                return short_link
+            except IntegrityError:
+                await db.rollback()
